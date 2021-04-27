@@ -11,7 +11,7 @@ $container = $app->getContainer();
 //----------------------------------------SILK-------------------------------------------
 //pasien
 //CREATE
-$app->post("/pasien/insert/", function (Request $request, Response $response){
+$app->post("/pasien/", function (Request $request, Response $response){
 
     $pasien = $request->getParsedBody();
 
@@ -52,15 +52,16 @@ $app->get("/pasien/", function (Request $request, Response $response){
 });
 
 //UPDATE
-$app->put("/pasien/update/{id}", function (Request $request, Response $response, $args){
-    $product_id = $args["id"];
-    $new_buah = $request->getParsedBody();
+$app->put("/pasien/{id}", function (Request $request, Response $response, $args){
+    $pasien_id = $args["id"];
+    $pasien = $request->getParsedBody();
     $sql = "UPDATE pasien SET nik=:nik, nama_lengkap=:nama_lengkap, tgl_lahir=:tgl_lahir, jns_kelamin=:jns_kelamin, alamat=:alamat,
             kelurahan=:kelurahan, kabupaten=:kabupaten, provinsi=:provinsi, warga_negara=:warga_negara,
-            status_nikah=:status_nikah, no_telp=:no_telp, tgl_daftar=:tgl_daftar WHERE no_rm=:no_rm";
+            status_nikah=:status_nikah, tgl_daftar=:tgl_daftar, no_telp=:no_telp WHERE no_rm=:no_rm";
     $stmt = $this->db->prepare($sql);
     
     $data = [
+        ":no_rm" => $pasien_id,
         ":nik" => $pasien["nik"],
         ":nama_lengkap" => $pasien["nama_lengkap"],
         ":tgl_lahir" => $pasien["tgl_lahir"],
@@ -82,7 +83,7 @@ $app->put("/pasien/update/{id}", function (Request $request, Response $response,
 });
 
 //DELETE
-$app->delete("/pasien/delete/{id}", function (Request $request, Response $response, $args){
+$app->delete("/pasien/{id}", function (Request $request, Response $response, $args){
     $id = $args["id"];
     $sql = "DELETE FROM pasien WHERE no_rm=:no_rm";
     $stmt = $this->db->prepare($sql);
@@ -163,13 +164,13 @@ $app->delete("/petugas/{id}", function (Request $request, Response $response, $a
 
 // PUT
 $app->put("/petugas/{id}", function (Request $request, Response $response, $args){
-    $id = $args["id"];
+    $nik = $args["id"];
     $petugas = $request->getParsedBody();
-    $sql = "UPDATE petugas SET nama=:nama, tgl_lahir=:tgl_lahir, jenis_kelamin=:jenis_kelamin, alamat=:alamat, no_telp=:no_telp WHERE nik=:nik";
+    $sql = "UPDATE petugas SET nama=:nama, tgl_lahir=:tgl_lahir, jenis_kelamin=:jenis_kelamin, alamat=:alamat, no_telp=:no_telp WHERE petugas.nik=:nik";
     $stmt = $this->db->prepare($sql);
     
     $data = [
-        ":nik" => $id,
+        ":nik" => $nik,
         ":nama" => $petugas["nama"],
         ":tgl_lahir" => $petugas["tgl_lahir"],
         ":jenis_kelamin" => $petugas["jenis_kelamin"],
@@ -179,6 +180,82 @@ $app->put("/petugas/{id}", function (Request $request, Response $response, $args
 
     if($stmt->execute($data))
         return $response->withJson(["petugas updated succesfully"], 200);
+    
+    return $response->withJson(["status" => "failed", "data" => "0"], 200);
+});
+
+//------------------------------UNIT---------------------------------
+$app->get("/unit/", function (Request $request, Response $response){
+    $sql = "SELECT * FROM unit";
+    $stmt = $this->db->prepare($sql);
+    $stmt->execute();
+    $result = $stmt->fetchAll();
+    return $response->withJson($result, 200);
+});
+
+// GET by id
+$app->get("/unit/{id}", function (Request $request, Response $response, $args){
+    $id = $args["id"];
+    $sql = "SELECT * FROM unit where id_unit=:id_unit";
+    $stmt = $this->db->prepare($sql);
+    $data = [
+        ":id_unit" => $id
+    ];
+    $stmt->execute($data);
+    $result = $stmt->fetchAll();
+    return $response->withJson($result, 200);
+});
+
+// POST
+$app->post("/unit/", function (Request $request, Response $response){
+
+    $unit = $request->getParsedBody();
+
+    $sql = "INSERT INTO unit (id_unit, nama_unit) 
+            VALUE (:id_unit, :nama_unit)";
+    $stmt = $this->db->prepare($sql);
+
+    $data = [
+        ":id_unit" => $unit["id_unit"],
+        ":nama_unit" => $unit["nama_unit"],
+    ];
+
+    if($stmt->execute($data))
+        return $response->withJson(["unit created succesfully"], 200);
+    
+    return $response->withJson(["status" => "failed", "data" => "0"], 200);
+});
+
+// DELETE
+$app->delete("/unit/{id}", function (Request $request, Response $response, $args){
+    $id = $args["id"];
+    $sql = "DELETE FROM unit WHERE id_unit=:id_unit";
+    $stmt = $this->db->prepare($sql);
+    
+    $data = [
+        ":id_unit" => $id
+    ];
+
+    if($stmt->execute($data))
+        return $response->withJson(["unit deleted successfully"], 200);
+    
+    return $response->withJson(["status" => "failed", "data" => "0"], 200);
+});
+
+//PUT
+$app->put("/unit/{id}", function (Request $request, Response $response, $args){
+    $id = $args["id"];
+    $unit = $request->getParsedBody();
+    $sql = "UPDATE unit SET nama_unit=:nama_unit WHERE unit.id_unit=:id_unit";
+    $stmt = $this->db->prepare($sql);
+    
+    $data = [
+        ":id_unit" => $id,
+        ":nama_unit" => $unit["nama_unit"],
+    ];
+
+    if($stmt->execute($data))
+        return $response->withJson(["unit updated succesfully"], 200);
     
     return $response->withJson(["status" => "failed", "data" => "0"], 200);
 });
@@ -331,7 +408,7 @@ $app->get("/obat/", function (Request $request, Response $response){
 
 //Obat Update
 $app->put("/obat/update/{id}", function (Request $request, Response $response, $args){
-    $obat_id = $args["id"];
+    $obat_id;
     $obat = $args["id"];
     $obat = $request->getParsedBody();
     $sql = "UPDATE obat SET kode_obat=:kode_obat, nama_obat=:nama_obat, jenis_obat=:jenis_obat, satuan=:satuan, stok=:stok,
@@ -402,7 +479,7 @@ $app->get("/resep/", function (Request $request, Response $response){
 
 //Resep Update
 $app->put("/resep/update/{id}", function (Request $request, Response $response, $args){
-    $resep_id = $args["id"];
+    $resep_id;
     $resep = $args["id"];
     $resep = $request->getParsedBody();
     $sql = "UPDATE resep SET id_resep=:id_resep, id_dokter=:id_dokter, no_rm=:no_rm, tgl_transaksi=:tgl_transaksi, total_harga=:total_harga
@@ -472,7 +549,7 @@ $app->get("/detil_resep/", function (Request $request, Response $response){
 
 //Update Detil Resep
 $app->put("/detil_resep/update/{id}", function (Request $request, Response $response, $args){
-    $detil_resep_id = $args["id"];
+    $detil_resep_id;
     $detil_resep = $args["id"];
     $detil_resep = $request->getParsedBody();
     $sql = "UPDATE resep SET id_detil_resep=:id_detil_resep, id_resep=:id_resep, kode_obat=:kode_obat, harga=:harga,jumlah_beli=:jumlah_beli
